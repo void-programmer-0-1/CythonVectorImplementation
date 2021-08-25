@@ -16,18 +16,29 @@ cdef Matrix matrix_init(int r,int c):
 
     cdef int i = 0
     cdef int j = 0
+    cdef int value = 0
 
     for i in range(matrix.row):
         matrix.var[i] = <int *>malloc(sizeof(int) * matrix.col)
         for j in range(matrix.col):
-            matrix.var[i][j] = 0
+            value += 1
+            matrix.var[i][j] = value
     
     return matrix
 
 
+cdef void matrix_print(Matrix& matrix):
+    cdef int i = 0
+    cdef int j = 0
+
+    for i in range(matrix.row):
+        for j in range(matrix.col):
+            print(matrix.var[i][j])
+
+
 def Pymatrix_init(r,c):
     cdef Matrix matrix =  matrix_init(r,c)
-    return matrix
+    matrix_print(matrix)
 
 
 
