@@ -938,6 +938,26 @@ static CYTHON_INLINE PyObject* __Pyx_PyObject_GetAttrStr(PyObject* obj, PyObject
 /* GetBuiltinName.proto */
 static PyObject *__Pyx_GetBuiltinName(PyObject *name);
 
+/* ListAppend.proto */
+#if CYTHON_USE_PYLIST_INTERNALS && CYTHON_ASSUME_SAFE_MACROS
+static CYTHON_INLINE int __Pyx_PyList_Append(PyObject* list, PyObject* x) {
+    PyListObject* L = (PyListObject*) list;
+    Py_ssize_t len = Py_SIZE(list);
+    if (likely(L->allocated > len) & likely(len > (L->allocated >> 1))) {
+        Py_INCREF(x);
+        PyList_SET_ITEM(list, len, x);
+        __Pyx_SET_SIZE(list, len + 1);
+        return 0;
+    }
+    return PyList_Append(list, x);
+}
+#else
+#define __Pyx_PyList_Append(L,x) PyList_Append(L,x)
+#endif
+
+/* None.proto */
+static CYTHON_INLINE void __Pyx_RaiseUnboundLocalError(const char *varname);
+
 /* PyThreadStateGet.proto */
 #if CYTHON_FAST_THREAD_STATE
 #define __Pyx_PyThreadState_declare  PyThreadState *__pyx_tstate;
@@ -1099,12 +1119,15 @@ static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 /* Module declarations from 'matrix' */
 static struct __pyx_t_6matrix_Matrix __pyx_f_6matrix_matrix_init(int, int); /*proto*/
 static void __pyx_f_6matrix_matrix_print(struct __pyx_t_6matrix_Matrix &); /*proto*/
+static struct __pyx_t_6matrix_Matrix __pyx_f_6matrix_dot(struct __pyx_t_6matrix_Matrix &, struct __pyx_t_6matrix_Matrix &); /*proto*/
+static void __pyx_f_6matrix___delete__(struct __pyx_t_6matrix_Matrix &); /*proto*/
 #define __Pyx_MODULE_NAME "matrix"
 extern int __pyx_module_is_main_matrix;
 int __pyx_module_is_main_matrix = 0;
 
 /* Implementation of 'matrix' */
 static PyObject *__pyx_builtin_range;
+static const char __pyx_k_[] = "\n";
 static const char __pyx_k_c[] = "c";
 static const char __pyx_k_r[] = "r";
 static const char __pyx_k_end[] = "end";
@@ -1115,9 +1138,13 @@ static const char __pyx_k_test[] = "__test__";
 static const char __pyx_k_print[] = "print";
 static const char __pyx_k_range[] = "range";
 static const char __pyx_k_matrix[] = "matrix";
+static const char __pyx_k_matrix1[] = "matrix1";
+static const char __pyx_k_matrix2[] = "matrix2";
+static const char __pyx_k_matrix3[] = "matrix3";
 static const char __pyx_k_matrix_pyx[] = "matrix.pyx";
 static const char __pyx_k_Pymatrix_init[] = "Pymatrix_init";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
+static PyObject *__pyx_kp_s_;
 static PyObject *__pyx_n_s_Pymatrix_init;
 static PyObject *__pyx_n_s_c;
 static PyObject *__pyx_n_s_cline_in_traceback;
@@ -1125,6 +1152,9 @@ static PyObject *__pyx_n_s_end;
 static PyObject *__pyx_n_s_file;
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_matrix;
+static PyObject *__pyx_n_s_matrix1;
+static PyObject *__pyx_n_s_matrix2;
+static PyObject *__pyx_n_s_matrix3;
 static PyObject *__pyx_kp_s_matrix_pyx;
 static PyObject *__pyx_n_s_name;
 static PyObject *__pyx_n_s_print;
@@ -1132,8 +1162,8 @@ static PyObject *__pyx_n_s_r;
 static PyObject *__pyx_n_s_range;
 static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_pf_6matrix_Pymatrix_init(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_r, PyObject *__pyx_v_c); /* proto */
-static PyObject *__pyx_tuple_;
-static PyObject *__pyx_codeobj__2;
+static PyObject *__pyx_tuple__2;
+static PyObject *__pyx_codeobj__3;
 /* Late includes */
 
 /* "matrix.pyx":10
@@ -1301,14 +1331,16 @@ static struct __pyx_t_6matrix_Matrix __pyx_f_6matrix_matrix_init(int __pyx_v_r, 
 static void __pyx_f_6matrix_matrix_print(struct __pyx_t_6matrix_Matrix &__pyx_v_matrix) {
   int __pyx_v_i;
   int __pyx_v_j;
+  PyObject *__pyx_v_print_list = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
   int __pyx_t_2;
   int __pyx_t_3;
-  int __pyx_t_4;
+  PyObject *__pyx_t_4 = NULL;
   int __pyx_t_5;
   int __pyx_t_6;
-  PyObject *__pyx_t_7 = NULL;
+  int __pyx_t_7;
+  int __pyx_t_8;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -1336,8 +1368,8 @@ static void __pyx_f_6matrix_matrix_print(struct __pyx_t_6matrix_Matrix &__pyx_v_
  *     cdef int j = 0
  * 
  *     for i in range(matrix.row):             # <<<<<<<<<<<<<<
+ *         print_list = []
  *         for j in range(matrix.col):
- *             print(matrix.var[i][j])
  */
   __pyx_t_1 = __pyx_v_matrix.row;
   __pyx_t_2 = __pyx_t_1;
@@ -1347,28 +1379,69 @@ static void __pyx_f_6matrix_matrix_print(struct __pyx_t_6matrix_Matrix &__pyx_v_
     /* "matrix.pyx":35
  * 
  *     for i in range(matrix.row):
- *         for j in range(matrix.col):             # <<<<<<<<<<<<<<
- *             print(matrix.var[i][j])
- * 
- */
-    __pyx_t_4 = __pyx_v_matrix.col;
-    __pyx_t_5 = __pyx_t_4;
-    for (__pyx_t_6 = 0; __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
-      __pyx_v_j = __pyx_t_6;
-
-      /* "matrix.pyx":36
- *     for i in range(matrix.row):
+ *         print_list = []             # <<<<<<<<<<<<<<
  *         for j in range(matrix.col):
- *             print(matrix.var[i][j])             # <<<<<<<<<<<<<<
- * 
+ *             print_list.append(matrix.var[i][j])
+ */
+    __pyx_t_4 = PyList_New(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 35, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_XDECREF_SET(__pyx_v_print_list, ((PyObject*)__pyx_t_4));
+    __pyx_t_4 = 0;
+
+    /* "matrix.pyx":36
+ *     for i in range(matrix.row):
+ *         print_list = []
+ *         for j in range(matrix.col):             # <<<<<<<<<<<<<<
+ *             print_list.append(matrix.var[i][j])
+ *         print(print_list)
+ */
+    __pyx_t_5 = __pyx_v_matrix.col;
+    __pyx_t_6 = __pyx_t_5;
+    for (__pyx_t_7 = 0; __pyx_t_7 < __pyx_t_6; __pyx_t_7+=1) {
+      __pyx_v_j = __pyx_t_7;
+
+      /* "matrix.pyx":37
+ *         print_list = []
+ *         for j in range(matrix.col):
+ *             print_list.append(matrix.var[i][j])             # <<<<<<<<<<<<<<
+ *         print(print_list)
+ *     print("\n")
+ */
+      __pyx_t_4 = __Pyx_PyInt_From_int(((__pyx_v_matrix.var[__pyx_v_i])[__pyx_v_j])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 37, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_4);
+      __pyx_t_8 = __Pyx_PyList_Append(__pyx_v_print_list, __pyx_t_4); if (unlikely(__pyx_t_8 == ((int)-1))) __PYX_ERR(0, 37, __pyx_L1_error)
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    }
+
+    /* "matrix.pyx":38
+ *         for j in range(matrix.col):
+ *             print_list.append(matrix.var[i][j])
+ *         print(print_list)             # <<<<<<<<<<<<<<
+ *     print("\n")
+ *     del print_list
+ */
+    if (__Pyx_PrintOne(0, __pyx_v_print_list) < 0) __PYX_ERR(0, 38, __pyx_L1_error)
+  }
+
+  /* "matrix.pyx":39
+ *             print_list.append(matrix.var[i][j])
+ *         print(print_list)
+ *     print("\n")             # <<<<<<<<<<<<<<
+ *     del print_list
  * 
  */
-      __pyx_t_7 = __Pyx_PyInt_From_int(((__pyx_v_matrix.var[__pyx_v_i])[__pyx_v_j])); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 36, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_7);
-      if (__Pyx_PrintOne(0, __pyx_t_7) < 0) __PYX_ERR(0, 36, __pyx_L1_error)
-      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    }
-  }
+  if (__Pyx_PrintOne(0, __pyx_kp_s_) < 0) __PYX_ERR(0, 39, __pyx_L1_error)
+
+  /* "matrix.pyx":40
+ *         print(print_list)
+ *     print("\n")
+ *     del print_list             # <<<<<<<<<<<<<<
+ * 
+ * cdef Matrix dot(Matrix& a,Matrix& b):
+ */
+  if (unlikely(!__pyx_v_print_list)) { __Pyx_RaiseUnboundLocalError("print_list"); __PYX_ERR(0, 40, __pyx_L1_error) }
+  __Pyx_DECREF(__pyx_v_print_list);
+  __pyx_v_print_list = NULL;
 
   /* "matrix.pyx":30
  * 
@@ -1381,18 +1454,234 @@ static void __pyx_f_6matrix_matrix_print(struct __pyx_t_6matrix_Matrix &__pyx_v_
   /* function exit code */
   goto __pyx_L0;
   __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_4);
   __Pyx_WriteUnraisable("matrix.matrix_print", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_print_list);
   __Pyx_RefNannyFinishContext();
 }
 
-/* "matrix.pyx":39
+/* "matrix.pyx":42
+ *     del print_list
  * 
+ * cdef Matrix dot(Matrix& a,Matrix& b):             # <<<<<<<<<<<<<<
+ *     cdef int i = 0
+ *     cdef int j = 0
+ */
+
+static struct __pyx_t_6matrix_Matrix __pyx_f_6matrix_dot(struct __pyx_t_6matrix_Matrix &__pyx_v_a, struct __pyx_t_6matrix_Matrix &__pyx_v_b) {
+  int __pyx_v_i;
+  int __pyx_v_j;
+  int __pyx_v_k;
+  struct __pyx_t_6matrix_Matrix __pyx_v_dot_product;
+  struct __pyx_t_6matrix_Matrix __pyx_r;
+  __Pyx_RefNannyDeclarations
+  int __pyx_t_1;
+  int __pyx_t_2;
+  int __pyx_t_3;
+  int __pyx_t_4;
+  int __pyx_t_5;
+  int __pyx_t_6;
+  int __pyx_t_7;
+  int __pyx_t_8;
+  int __pyx_t_9;
+  int __pyx_t_10;
+  int __pyx_t_11;
+  __Pyx_RefNannySetupContext("dot", 0);
+
+  /* "matrix.pyx":43
+ * 
+ * cdef Matrix dot(Matrix& a,Matrix& b):
+ *     cdef int i = 0             # <<<<<<<<<<<<<<
+ *     cdef int j = 0
+ *     cdef int k = 0
+ */
+  __pyx_v_i = 0;
+
+  /* "matrix.pyx":44
+ * cdef Matrix dot(Matrix& a,Matrix& b):
+ *     cdef int i = 0
+ *     cdef int j = 0             # <<<<<<<<<<<<<<
+ *     cdef int k = 0
+ * 
+ */
+  __pyx_v_j = 0;
+
+  /* "matrix.pyx":45
+ *     cdef int i = 0
+ *     cdef int j = 0
+ *     cdef int k = 0             # <<<<<<<<<<<<<<
+ * 
+ *     cdef Matrix dot_product = matrix_init(a.row,b.col)
+ */
+  __pyx_v_k = 0;
+
+  /* "matrix.pyx":47
+ *     cdef int k = 0
+ * 
+ *     cdef Matrix dot_product = matrix_init(a.row,b.col)             # <<<<<<<<<<<<<<
+ * 
+ *     for i in range(a.row):
+ */
+  __pyx_v_dot_product = __pyx_f_6matrix_matrix_init(__pyx_v_a.row, __pyx_v_b.col);
+
+  /* "matrix.pyx":49
+ *     cdef Matrix dot_product = matrix_init(a.row,b.col)
+ * 
+ *     for i in range(a.row):             # <<<<<<<<<<<<<<
+ *         for j in range(b.col):
+ *             dot_product.var[i][j] = 0
+ */
+  __pyx_t_1 = __pyx_v_a.row;
+  __pyx_t_2 = __pyx_t_1;
+  for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
+    __pyx_v_i = __pyx_t_3;
+
+    /* "matrix.pyx":50
+ * 
+ *     for i in range(a.row):
+ *         for j in range(b.col):             # <<<<<<<<<<<<<<
+ *             dot_product.var[i][j] = 0
+ *             for k in range(a.col):
+ */
+    __pyx_t_4 = __pyx_v_b.col;
+    __pyx_t_5 = __pyx_t_4;
+    for (__pyx_t_6 = 0; __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
+      __pyx_v_j = __pyx_t_6;
+
+      /* "matrix.pyx":51
+ *     for i in range(a.row):
+ *         for j in range(b.col):
+ *             dot_product.var[i][j] = 0             # <<<<<<<<<<<<<<
+ *             for k in range(a.col):
+ *                 dot_product.var[i][j] += a.var[i][k] * b.var[k][j]
+ */
+      ((__pyx_v_dot_product.var[__pyx_v_i])[__pyx_v_j]) = 0;
+
+      /* "matrix.pyx":52
+ *         for j in range(b.col):
+ *             dot_product.var[i][j] = 0
+ *             for k in range(a.col):             # <<<<<<<<<<<<<<
+ *                 dot_product.var[i][j] += a.var[i][k] * b.var[k][j]
+ * 
+ */
+      __pyx_t_7 = __pyx_v_a.col;
+      __pyx_t_8 = __pyx_t_7;
+      for (__pyx_t_9 = 0; __pyx_t_9 < __pyx_t_8; __pyx_t_9+=1) {
+        __pyx_v_k = __pyx_t_9;
+
+        /* "matrix.pyx":53
+ *             dot_product.var[i][j] = 0
+ *             for k in range(a.col):
+ *                 dot_product.var[i][j] += a.var[i][k] * b.var[k][j]             # <<<<<<<<<<<<<<
+ * 
+ *     return dot_product
+ */
+        __pyx_t_10 = __pyx_v_i;
+        __pyx_t_11 = __pyx_v_j;
+        ((__pyx_v_dot_product.var[__pyx_t_10])[__pyx_t_11]) = (((__pyx_v_dot_product.var[__pyx_t_10])[__pyx_t_11]) + (((__pyx_v_a.var[__pyx_v_i])[__pyx_v_k]) * ((__pyx_v_b.var[__pyx_v_k])[__pyx_v_j])));
+      }
+    }
+  }
+
+  /* "matrix.pyx":55
+ *                 dot_product.var[i][j] += a.var[i][k] * b.var[k][j]
+ * 
+ *     return dot_product             # <<<<<<<<<<<<<<
+ * 
+ * cdef void __delete__(Matrix& a):
+ */
+  __pyx_r = __pyx_v_dot_product;
+  goto __pyx_L0;
+
+  /* "matrix.pyx":42
+ *     del print_list
+ * 
+ * cdef Matrix dot(Matrix& a,Matrix& b):             # <<<<<<<<<<<<<<
+ *     cdef int i = 0
+ *     cdef int j = 0
+ */
+
+  /* function exit code */
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "matrix.pyx":57
+ *     return dot_product
+ * 
+ * cdef void __delete__(Matrix& a):             # <<<<<<<<<<<<<<
+ * 
+ *     cdef int i = 0
+ */
+
+static void __pyx_f_6matrix___delete__(struct __pyx_t_6matrix_Matrix &__pyx_v_a) {
+  int __pyx_v_i;
+  __Pyx_RefNannyDeclarations
+  int __pyx_t_1;
+  int __pyx_t_2;
+  int __pyx_t_3;
+  __Pyx_RefNannySetupContext("__delete__", 0);
+
+  /* "matrix.pyx":59
+ * cdef void __delete__(Matrix& a):
+ * 
+ *     cdef int i = 0             # <<<<<<<<<<<<<<
+ *     for i in range(a.row):
+ *         free(a.var[i])
+ */
+  __pyx_v_i = 0;
+
+  /* "matrix.pyx":60
+ * 
+ *     cdef int i = 0
+ *     for i in range(a.row):             # <<<<<<<<<<<<<<
+ *         free(a.var[i])
+ *     free(a.var)
+ */
+  __pyx_t_1 = __pyx_v_a.row;
+  __pyx_t_2 = __pyx_t_1;
+  for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
+    __pyx_v_i = __pyx_t_3;
+
+    /* "matrix.pyx":61
+ *     cdef int i = 0
+ *     for i in range(a.row):
+ *         free(a.var[i])             # <<<<<<<<<<<<<<
+ *     free(a.var)
+ * 
+ */
+    free((__pyx_v_a.var[__pyx_v_i]));
+  }
+
+  /* "matrix.pyx":62
+ *     for i in range(a.row):
+ *         free(a.var[i])
+ *     free(a.var)             # <<<<<<<<<<<<<<
+ * 
+ * def Pymatrix_init(r,c):
+ */
+  free(__pyx_v_a.var);
+
+  /* "matrix.pyx":57
+ *     return dot_product
+ * 
+ * cdef void __delete__(Matrix& a):             # <<<<<<<<<<<<<<
+ * 
+ *     cdef int i = 0
+ */
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+}
+
+/* "matrix.pyx":64
+ *     free(a.var)
  * 
  * def Pymatrix_init(r,c):             # <<<<<<<<<<<<<<
- *     cdef Matrix matrix =  matrix_init(r,c)
- *     matrix_print(matrix)
+ *     cdef Matrix matrix1 = matrix_init(r,c)
+ *     cdef Matrix matrix2 = matrix_init(r,c)
  */
 
 /* Python wrapper */
@@ -1430,11 +1719,11 @@ static PyObject *__pyx_pw_6matrix_1Pymatrix_init(PyObject *__pyx_self, PyObject 
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_c)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("Pymatrix_init", 1, 2, 2, 1); __PYX_ERR(0, 39, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("Pymatrix_init", 1, 2, 2, 1); __PYX_ERR(0, 64, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "Pymatrix_init") < 0)) __PYX_ERR(0, 39, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "Pymatrix_init") < 0)) __PYX_ERR(0, 64, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -1447,7 +1736,7 @@ static PyObject *__pyx_pw_6matrix_1Pymatrix_init(PyObject *__pyx_self, PyObject 
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("Pymatrix_init", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 39, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("Pymatrix_init", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 64, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("matrix.Pymatrix_init", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -1461,7 +1750,9 @@ static PyObject *__pyx_pw_6matrix_1Pymatrix_init(PyObject *__pyx_self, PyObject 
 }
 
 static PyObject *__pyx_pf_6matrix_Pymatrix_init(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_r, PyObject *__pyx_v_c) {
-  struct __pyx_t_6matrix_Matrix __pyx_v_matrix;
+  struct __pyx_t_6matrix_Matrix __pyx_v_matrix1;
+  struct __pyx_t_6matrix_Matrix __pyx_v_matrix2;
+  struct __pyx_t_6matrix_Matrix __pyx_v_matrix3;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
@@ -1471,32 +1762,97 @@ static PyObject *__pyx_pf_6matrix_Pymatrix_init(CYTHON_UNUSED PyObject *__pyx_se
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("Pymatrix_init", 0);
 
-  /* "matrix.pyx":40
+  /* "matrix.pyx":65
  * 
  * def Pymatrix_init(r,c):
- *     cdef Matrix matrix =  matrix_init(r,c)             # <<<<<<<<<<<<<<
- *     matrix_print(matrix)
- * 
+ *     cdef Matrix matrix1 = matrix_init(r,c)             # <<<<<<<<<<<<<<
+ *     cdef Matrix matrix2 = matrix_init(r,c)
+ *     cdef Matrix matrix3 = dot(matrix1,matrix2)
  */
-  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_r); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 40, __pyx_L1_error)
-  __pyx_t_2 = __Pyx_PyInt_As_int(__pyx_v_c); if (unlikely((__pyx_t_2 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 40, __pyx_L1_error)
-  __pyx_v_matrix = __pyx_f_6matrix_matrix_init(__pyx_t_1, __pyx_t_2);
+  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_r); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 65, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_As_int(__pyx_v_c); if (unlikely((__pyx_t_2 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 65, __pyx_L1_error)
+  __pyx_v_matrix1 = __pyx_f_6matrix_matrix_init(__pyx_t_1, __pyx_t_2);
 
-  /* "matrix.pyx":41
+  /* "matrix.pyx":66
  * def Pymatrix_init(r,c):
- *     cdef Matrix matrix =  matrix_init(r,c)
- *     matrix_print(matrix)             # <<<<<<<<<<<<<<
+ *     cdef Matrix matrix1 = matrix_init(r,c)
+ *     cdef Matrix matrix2 = matrix_init(r,c)             # <<<<<<<<<<<<<<
+ *     cdef Matrix matrix3 = dot(matrix1,matrix2)
+ *     matrix_print(matrix1)
+ */
+  __pyx_t_2 = __Pyx_PyInt_As_int(__pyx_v_r); if (unlikely((__pyx_t_2 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 66, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_c); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 66, __pyx_L1_error)
+  __pyx_v_matrix2 = __pyx_f_6matrix_matrix_init(__pyx_t_2, __pyx_t_1);
+
+  /* "matrix.pyx":67
+ *     cdef Matrix matrix1 = matrix_init(r,c)
+ *     cdef Matrix matrix2 = matrix_init(r,c)
+ *     cdef Matrix matrix3 = dot(matrix1,matrix2)             # <<<<<<<<<<<<<<
+ *     matrix_print(matrix1)
+ *     matrix_print(matrix2)
+ */
+  __pyx_v_matrix3 = __pyx_f_6matrix_dot(__pyx_v_matrix1, __pyx_v_matrix2);
+
+  /* "matrix.pyx":68
+ *     cdef Matrix matrix2 = matrix_init(r,c)
+ *     cdef Matrix matrix3 = dot(matrix1,matrix2)
+ *     matrix_print(matrix1)             # <<<<<<<<<<<<<<
+ *     matrix_print(matrix2)
+ *     matrix_print(matrix3)
+ */
+  __pyx_f_6matrix_matrix_print(__pyx_v_matrix1);
+
+  /* "matrix.pyx":69
+ *     cdef Matrix matrix3 = dot(matrix1,matrix2)
+ *     matrix_print(matrix1)
+ *     matrix_print(matrix2)             # <<<<<<<<<<<<<<
+ *     matrix_print(matrix3)
+ *     __delete__(matrix1)
+ */
+  __pyx_f_6matrix_matrix_print(__pyx_v_matrix2);
+
+  /* "matrix.pyx":70
+ *     matrix_print(matrix1)
+ *     matrix_print(matrix2)
+ *     matrix_print(matrix3)             # <<<<<<<<<<<<<<
+ *     __delete__(matrix1)
+ *     __delete__(matrix2)
+ */
+  __pyx_f_6matrix_matrix_print(__pyx_v_matrix3);
+
+  /* "matrix.pyx":71
+ *     matrix_print(matrix2)
+ *     matrix_print(matrix3)
+ *     __delete__(matrix1)             # <<<<<<<<<<<<<<
+ *     __delete__(matrix2)
+ *     __delete__(matrix3)
+ */
+  __pyx_f_6matrix___delete__(__pyx_v_matrix1);
+
+  /* "matrix.pyx":72
+ *     matrix_print(matrix3)
+ *     __delete__(matrix1)
+ *     __delete__(matrix2)             # <<<<<<<<<<<<<<
+ *     __delete__(matrix3)
+ * 
+ */
+  __pyx_f_6matrix___delete__(__pyx_v_matrix2);
+
+  /* "matrix.pyx":73
+ *     __delete__(matrix1)
+ *     __delete__(matrix2)
+ *     __delete__(matrix3)             # <<<<<<<<<<<<<<
  * 
  * 
  */
-  __pyx_f_6matrix_matrix_print(__pyx_v_matrix);
+  __pyx_f_6matrix___delete__(__pyx_v_matrix3);
 
-  /* "matrix.pyx":39
- * 
+  /* "matrix.pyx":64
+ *     free(a.var)
  * 
  * def Pymatrix_init(r,c):             # <<<<<<<<<<<<<<
- *     cdef Matrix matrix =  matrix_init(r,c)
- *     matrix_print(matrix)
+ *     cdef Matrix matrix1 = matrix_init(r,c)
+ *     cdef Matrix matrix2 = matrix_init(r,c)
  */
 
   /* function exit code */
@@ -1557,6 +1913,7 @@ static struct PyModuleDef __pyx_moduledef = {
 #endif
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
+  {&__pyx_kp_s_, __pyx_k_, sizeof(__pyx_k_), 0, 0, 1, 0},
   {&__pyx_n_s_Pymatrix_init, __pyx_k_Pymatrix_init, sizeof(__pyx_k_Pymatrix_init), 0, 0, 1, 1},
   {&__pyx_n_s_c, __pyx_k_c, sizeof(__pyx_k_c), 0, 0, 1, 1},
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
@@ -1564,6 +1921,9 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_file, __pyx_k_file, sizeof(__pyx_k_file), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
   {&__pyx_n_s_matrix, __pyx_k_matrix, sizeof(__pyx_k_matrix), 0, 0, 1, 1},
+  {&__pyx_n_s_matrix1, __pyx_k_matrix1, sizeof(__pyx_k_matrix1), 0, 0, 1, 1},
+  {&__pyx_n_s_matrix2, __pyx_k_matrix2, sizeof(__pyx_k_matrix2), 0, 0, 1, 1},
+  {&__pyx_n_s_matrix3, __pyx_k_matrix3, sizeof(__pyx_k_matrix3), 0, 0, 1, 1},
   {&__pyx_kp_s_matrix_pyx, __pyx_k_matrix_pyx, sizeof(__pyx_k_matrix_pyx), 0, 0, 1, 0},
   {&__pyx_n_s_name, __pyx_k_name, sizeof(__pyx_k_name), 0, 0, 1, 1},
   {&__pyx_n_s_print, __pyx_k_print, sizeof(__pyx_k_print), 0, 0, 1, 1},
@@ -1583,17 +1943,17 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "matrix.pyx":39
- * 
+  /* "matrix.pyx":64
+ *     free(a.var)
  * 
  * def Pymatrix_init(r,c):             # <<<<<<<<<<<<<<
- *     cdef Matrix matrix =  matrix_init(r,c)
- *     matrix_print(matrix)
+ *     cdef Matrix matrix1 = matrix_init(r,c)
+ *     cdef Matrix matrix2 = matrix_init(r,c)
  */
-  __pyx_tuple_ = PyTuple_Pack(3, __pyx_n_s_r, __pyx_n_s_c, __pyx_n_s_matrix); if (unlikely(!__pyx_tuple_)) __PYX_ERR(0, 39, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple_);
-  __Pyx_GIVEREF(__pyx_tuple_);
-  __pyx_codeobj__2 = (PyObject*)__Pyx_PyCode_New(2, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple_, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_matrix_pyx, __pyx_n_s_Pymatrix_init, 39, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__2)) __PYX_ERR(0, 39, __pyx_L1_error)
+  __pyx_tuple__2 = PyTuple_Pack(5, __pyx_n_s_r, __pyx_n_s_c, __pyx_n_s_matrix1, __pyx_n_s_matrix2, __pyx_n_s_matrix3); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(0, 64, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__2);
+  __Pyx_GIVEREF(__pyx_tuple__2);
+  __pyx_codeobj__3 = (PyObject*)__Pyx_PyCode_New(2, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__2, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_matrix_pyx, __pyx_n_s_Pymatrix_init, 64, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__3)) __PYX_ERR(0, 64, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -1874,16 +2234,16 @@ if (!__Pyx_RefNanny) {
   if (__Pyx_patch_abc() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
 
-  /* "matrix.pyx":39
- * 
+  /* "matrix.pyx":64
+ *     free(a.var)
  * 
  * def Pymatrix_init(r,c):             # <<<<<<<<<<<<<<
- *     cdef Matrix matrix =  matrix_init(r,c)
- *     matrix_print(matrix)
+ *     cdef Matrix matrix1 = matrix_init(r,c)
+ *     cdef Matrix matrix2 = matrix_init(r,c)
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6matrix_1Pymatrix_init, NULL, __pyx_n_s_matrix); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 39, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6matrix_1Pymatrix_init, NULL, __pyx_n_s_matrix); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 64, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_Pymatrix_init, __pyx_t_1) < 0) __PYX_ERR(0, 39, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_Pymatrix_init, __pyx_t_1) < 0) __PYX_ERR(0, 64, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "matrix.pyx":1
@@ -1964,6 +2324,11 @@ static PyObject *__Pyx_GetBuiltinName(PyObject *name) {
 #endif
     }
     return result;
+}
+
+/* None */
+static CYTHON_INLINE void __Pyx_RaiseUnboundLocalError(const char *varname) {
+    PyErr_Format(PyExc_UnboundLocalError, "local variable '%s' referenced before assignment", varname);
 }
 
 /* PyErrFetchRestore */
